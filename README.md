@@ -1,5 +1,4 @@
-<!-- # 🩻 Class-Dependent Miscalibration Severely Degrades Selective Prediction in Multimodal Clinical Prediction Models -->
-
+# Learned Data-driven Priors for Uncertainty-Aware Deterioration Risk Prediction with Multimodal Data
 
 Table of contents
 =================
@@ -7,18 +6,18 @@ Table of contents
   * [Background](#Background)
   * [Directory overview](#Directory-overview)
   * [Getting started](#Getting-started)
-  * [License](#License)
+  <!-- * [License](#License) -->
 
 
 Background
 ============
-As artificial intelligence systems move toward clinical deployment, ensuring reliable prediction behavior is fundamental for safety-critical decision-making tasks.
-One proposed safeguard is selective prediction, where models can defer uncertain predictions to human experts for review.
-In this work, we empirically evaluate the reliability of uncertainty-based selective prediction in multilabel clinical condition classification using multimodal ICU data.
-Across a range of state-of-the-art unimodal and multimodal models, we find that selective prediction can substantially degrade performance despite strong standard evaluation metrics.
-This failure is driven by severe class-dependent miscalibration, whereby models assign high uncertainty to correct predictions and low uncertainty to incorrect ones, particularly for underrepresented clinical conditions.
-Our results show that commonly used aggregate metrics can obscure these effects, limiting their ability to assess selective prediction behavior in this setting.
-Taken together, our findings characterize a task-specific failure mode of selective prediction in multimodal clinical condition classification and highlight the need for calibration-aware evaluation to provide strong guarantees of safety and robustness in clinical AI.
+Model safety is a crucial requirement for integrating predictive models into clinical decision support systems. 
+One approach for ensuring trustworthy use is the ability to measure uncertainty in individual predictions. 
+However, current machine learning models frequently lack reliable uncertainty quantification, hindering real-world deployment. This is further observed in multimodal settings, where the goal is merely effective information fusion.
+In this work, we propose MedCertAIn, a predictive uncertainty framework that leverages multimodal clinical data for in-hospital risk prediction to improve both model performance and reliability. We design data-driven priors over neural network parameters using a hybrid strategy that leverages inter-modal similarity in self-supervised latent representations and raw data corruptions.
+We train and evaluate our proposed approach using clinical time-series and chest X-ray images from the publicly-available datasets MIMIC-IV and MIMIC-CXR. 
+Our results show that MedCertAIn significantly enhances predictive performance and uncertainty quantification compared to state-of-the-art deterministic baselines and existing Bayesian methods. 
+These findings highlight the promise of data-driven priors in advancing robust, uncertainty-aware AI tools for high-stakes clinical applications.
 
 Directory overview
 ====================================
@@ -56,28 +55,9 @@ Directory overview
 
 Getting started
 ====================================
-
-To get started, follow the instructions below.
-
-### Prerequisites
-
-- Python 3.8+
-- Conda environment (recommended)
-
-### Installation
-
-1. Clone the repository:
-   ```sh
-   git clone https://anonymous.4open.science/r/medcalibration-B187/README.md
-
-2. Create conda environment:
-
-    conda env create -f environment.yml
-    conda activate uq-wq
-
-3. Refer to **shell_scripts/** and **job_files/** folders for specific cases of model training
+TODO: Currently drafting specific instructions to provide an easy-to-follow setup, training and evaluation.
 
 
-License
+<!-- License
 ====================================
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License. See the LICENSE file for details. -->
