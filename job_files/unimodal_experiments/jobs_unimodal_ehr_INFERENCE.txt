@@ -1,0 +1,9 @@
+python trainer.py --config configs/nn-tdvi-pt-ehr-mimic.json --save_to_wandb --jobid 001 --label_file_splits medfuse_test --model_for_final_eval LAST --batch_size 16 --num_epochs 50 --learning_rate 2.951e-05 --mimic_task phenotyping --wandb_project uq-uni-ehr --seed 0
+python trainer.py --config configs/nn-tdvi-pt-ehr-mimic.json --save_to_wandb --jobid 001 --label_file_splits medfuse_test --model_for_final_eval LAST --batch_size 16 --num_epochs 50 --learning_rate 2.951e-05 --mimic_task phenotyping --wandb_project uq-uni-ehr --seed 1
+python trainer.py --config configs/nn-tdvi-pt-ehr-mimic.json --save_to_wandb --jobid 001 --label_file_splits medfuse_test --model_for_final_eval LAST --batch_size 16 --num_epochs 50 --learning_rate 2.951e-05 --mimic_task phenotyping --wandb_project uq-uni-ehr --seed 2
+python trainer.py --config configs/nn-tdvi-pt-ehr-mimic.json --save_to_wandb --jobid 001 --label_file_splits medfuse_test --model_for_final_eval LAST --batch_size 16 --num_epochs 50 --learning_rate 2.951e-05 --mimic_task phenotyping --wandb_project uq-uni-ehr --seed 3
+python trainer.py --config configs/nn-tdvi-pt-ehr-mimic.json --save_to_wandb --jobid 001 --label_file_splits medfuse_test --model_for_final_eval LAST --batch_size 16 --num_epochs 50 --learning_rate 2.951e-05 --mimic_task phenotyping --wandb_project uq-uni-ehr --seed 4
+
+
+# Inference data extraction
+python trainer.py --config configs/nn-tdvi-pt-ehr-mimic.json --label_file_splits medfuse_test --model_for_final_eval checkpoints/8691707_LSTM_DET_50_2.951e-05_16_0.9_1_exprt_001_seed_0_phenotyping_medfuse_test_True/AUROC_checkpoint_best_0 --evaluate --mimic_task phenotyping --seed 0 --inference_data_model_name unimodal_ehr --save_plot_data

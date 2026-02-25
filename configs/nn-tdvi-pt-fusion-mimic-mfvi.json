@@ -1,0 +1,42 @@
+{
+    "configurations": [
+        {
+            "name": "nn-pt-fusion-mimic-mfvi",
+            "id": "0",
+            "cwd": "default",
+            "env": {
+                "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.8",
+                "TF_CPP_MIN_LOG_LEVEL": "3",
+                "LD_LIBRARY_PATH": "",
+                "PYTHONHASHSEED": "0",
+                "PYTHONUNBUFFERED": "1",
+                "TF_CUDNN_DETERMINISTIC": "1",
+                "TF_DETERMINISTIC_OPS": "1"
+            },
+            "args": [
+                "--optimizer_name", "adam",
+                "--dataset", "mimic-fusion",
+
+                "--model_name", "Fusion",
+                "--prediction_type", "mimic",
+                "--mimic_data_pairing", "paired_ehr_cxr",
+
+                "--method", "psvi",
+                "--reg_type", "parameter_kl",
+                "--forward_points", "train",
+            
+                "--mc_samples_llk", "1",
+                "--mc_samples_eval", "1",
+                "--reg_scale", "1",
+
+                "--prior_mean", "0",
+                "--init_logvar", "-50",
+                "--init_final_layer_bias_logvar", "-15",
+                "--prior_feature_logvar", "-50",
+                "--log_frequency", "5",
+
+                "--wandb_account", "default"
+            ]
+        }
+    ]
+}
