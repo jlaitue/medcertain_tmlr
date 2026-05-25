@@ -3,13 +3,10 @@ from sklearn.metrics import recall_score
 import torch
 from sklearn.metrics.pairwise import cosine_similarity
 
-# for task in ["in-hospital-mortality", "phenotyping"]:
-for task in ["phenotyping"]:
+for task in ["in-hospital-mortality"]:
 
     latent_points = np.load(f"laboratory/latent_space_representation_{task}.npz")
     original_train_points = np.load(f"laboratory/train_points_for_context_{task}_original_splits.npz")
-
-    # shape = original_train_points["ehr_inputs"].shape[0]
 
     latent_ehr_points = latent_points["ehr_features"]
     latent_cxr_points = latent_points["cxr_features"]
@@ -23,9 +20,6 @@ for task in ["phenotyping"]:
         # n_std = 1
         left_tail = mean_distance - n_std*std_distance
         context_points_idx = (cosine_distances < left_tail)
-        # context_points_idx = np.random.choice([True, False], size=shape, p=[0.1, 0.9])
-
-        # print(f"Misclassified points: {context_points_idx.sum()} | Mean: {mean_distance:0.6f} | STD: {std_distance:0.6f} | Left tail: {left_tail:0.6f}")
 
         ehr_inputs = original_train_points["ehr_inputs"][context_points_idx]
         ehr_targets = original_train_points["ehr_targets"][context_points_idx]

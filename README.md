@@ -119,3 +119,9 @@ configs/nn-tdvi-pt-fusion-mimic-psvi.json     # MedCertAIn
 ```
 
 Use the shell scripts/configs as the run interface. For final evaluation, the most important flag to set inside the evaluation script is `--model_for_final_eval`.
+
+## Data availability
+
+The MIMIC-CXR/MIMIC-IV datasets must be obtained separately through PhysioNet and are not included in this repository.
+
+The MedCertAIn context-set artifacts used for the main experiments are also not included because of their large file size. These files can be shared upon request. After obtaining them, place them at the paths expected by `utils/constants.py` and the corresponding shell scripts.
