@@ -1,63 +1,121 @@
-# Learned Data-driven Priors for Uncertainty-Aware Deterioration Risk Prediction with Multimodal Data
+# Data-Driven Priors for Uncertainty-Aware Deterioration Risk Prediction with Multimodal Data
 
-Table of contents
-=================
+Minimal instructions for training and evaluating MedFuse, the uninformative-prior baseline, and MedCertAIn on MIMIC-CXR/EHR fusion data.
 
-  * [Background](#Background)
-  * [Directory overview](#Directory-overview)
-  * [Getting started](#Getting-started)
-  <!-- * [License](#License) -->
+## 1. Setup
 
+Create the conda environment:
 
-Background
-============
-Model safety is a crucial requirement for integrating predictive models into clinical decision support systems. 
-One approach for ensuring trustworthy use is the ability to measure uncertainty in individual predictions. 
-However, current machine learning models frequently lack reliable uncertainty quantification, hindering real-world deployment. This is further observed in multimodal settings, where the goal is merely effective information fusion.
-In this work, we propose MedCertAIn, a predictive uncertainty framework that leverages multimodal clinical data for in-hospital risk prediction to improve both model performance and reliability. We design data-driven priors over neural network parameters using a hybrid strategy that leverages inter-modal similarity in self-supervised latent representations and raw data corruptions.
-We train and evaluate our proposed approach using clinical time-series and chest X-ray images from the publicly-available datasets MIMIC-IV and MIMIC-CXR. 
-Our results show that MedCertAIn significantly enhances predictive performance and uncertainty quantification compared to state-of-the-art deterministic baselines and existing Bayesian methods. 
-These findings highlight the promise of data-driven priors in advancing robust, uncertainty-aware AI tools for high-stakes clinical applications.
+```bash
+conda env create -f environment.yml
+conda activate medcertain
+```
 
-Directory overview
-====================================
+Run all commands from the repository root unless your cluster scripts do something different.
 
-### MedFuse/
-- Contains the main MedFuse model architectures.
+## 2. Set local paths
 
-### configs/
-- Configuration files for different training methods, unimodal and multimodal as well as hyperparameters for the group aware priors framework.
+Before running anything, edit `utils/constants.py`:
 
-### processing_scripts/
-- Scripts for processing images, datasets, and evaluation metrics.
+```python
+DATASET_PATH = "data"
+CHECKPOINT_PATH = "checkpoints"
 
-### shell_scripts/ and job_files/
-- Scripts for submitting batch jobs to an HPC cluster.
+MIMIC_CXR_PATH = "data/physionet.org/files/mimic-cxr-jpg/2.0.0/"
+MIMIC_EHR_PATH = "data/mimic-iv-extracted/"
+MIMIC_PATIENT_METADATA_FILE = "data/physionet.org/files/mimic-iv-1.0/core/patients.csv"
+```
 
-### arguments.py
-- Parses arguments sent through the terminal.
+Set these to the locations on your machine/cluster:
 
-### base_architectures.py and base_datasets.py
-- Base code to loading and processing datasets and model weights.
+- `MIMIC_CXR_PATH`: MIMIC-CXR-JPG root directory.
+- `MIMIC_EHR_PATH`: extracted MIMIC-IV/EHR directory used by MedFuse.
+- `MIMIC_PATIENT_METADATA_FILE`: MIMIC-IV `patients.csv` file.
+- `CHECKPOINT_PATH`: where trained models/checkpoints are saved and loaded from.
+- `DATASET_PATH`: root for any auxiliary data used by the dataloaders.
 
-### functions.py
-- Contains various utility functions used throughout the code for calculating performance metrics and custom loss functions used in model training.
+If you save inference outputs with `--save_plot_data`, also make sure the inference output directory exists. In the current code this is written under:
 
-### trainer.py
-- Main script.
-- **Functionality**:
-  - **Data Loading**: Prepares data for training and evaluation.
-  - **Model Initialization**: Sets up the LSTM and ResNet models.
-  - **Training Loops**: Core training routines.
-  - **Evaluation**: Performance assessment of trained models.
-  - **Optimizers**: Configuration of optimization algorithms.
-  - **Data Extraction During Inference**: Extracts data for analysis during model inference.
+```bash
+data/MedFuse/inference_data/<mimic_task>/
+```
 
-Getting started
-====================================
-TODO: Currently drafting specific instructions to provide an easy-to-follow setup, training and evaluation.
+For example:
 
+```bash
+mkdir -p data/MedFuse/inference_data/phenotyping
+```
 
-<!-- License
-====================================
-This project is licensed under the MIT License. See the LICENSE file for details. -->
+## 3. Code entry point
+
+The main entry point is `main.py`. It handles the high-level pipeline:
+
+1. parse args and configure the run,
+2. load MIMIC fusion data,
+3. initialize the MedCertAIn module,
+4. train if `--evaluate` is not set,
+5. load a checkpoint,
+6. evaluate on the test set or save inference outputs.
+
+Core implementation details are in `utils/` and `MedFuse/`.
+
+## 4. Recommended pipeline
+
+The expected workflow is:
+
+1. Train deterministic MedFuse for 5 seeds.
+2. Use those MedFuse checkpoints to initialize MedCertAIn.
+3. Fine-tune MedCertAIn from the corresponding MedFuse checkpoint.
+4. Evaluate the trained models on the test set.
+
+The shell entry points are organized as:
+
+- `shell_scripts/train/medfuse.sh`
+- `shell_scripts/train/uninformative_prior.sh`
+- `shell_scripts/train/medcertain.sh`
+- `shell_scripts/eval/medfuse.sh`
+- `shell_scripts/eval/uninformative_prior.sh`
+- `shell_scripts/eval/medcertain.sh`
+
+## 5. Training scripts
+
+Use the scripts in `shell_scripts/train/` for training runs. Update the script files with your cluster/local command details as needed.
+
+- `shell_scripts/train/medfuse.sh`: train deterministic MedFuse from scratch for 5 seeds.
+- `shell_scripts/train/uninformative_prior.sh`: train the uninformative-prior Bayesian baseline.
+- `shell_scripts/train/medcertain.sh`: fine-tune MedCertAIn initialized from the trained MedFuse checkpoints.
+
+The intended MedCertAIn workflow is to first train MedFuse for seeds `0`-`4`, then use those trained MedFuse checkpoints to initialize and fine-tune the corresponding MedCertAIn models.
+
+## 6. Evaluation scripts
+
+Use the scripts in `shell_scripts/eval/` for test-set evaluation. For evaluating a specific saved model folder, update the relevant script so `--model_for_final_eval` points to that checkpoint folder on disk.
+
+- `shell_scripts/eval/medfuse.sh`: evaluate deterministic MedFuse.
+- `shell_scripts/eval/uninformative_prior.sh`: evaluate the uninformative-prior Bayesian baseline.
+- `shell_scripts/eval/medcertain.sh`: evaluate MedCertAIn.
+
+`--model_for_final_eval` accepts:
+
+- `BEST`: load the best checkpoint from the current run directory.
+- `LAST`: load the last checkpoint from the current run directory.
+- `/path/to/checkpoint/folder`: load a specific checkpoint folder from disk. Use this for final evaluation of already-trained models.
+
+To save predictions/targets for downstream plotting instead of computing the full metrics, add the relevant inference flags in the evaluation script, including:
+
+```bash
+--save_plot_data
+--inference_data_model_name <name_for_saved_outputs>
+```
+
+## 7. Config files
+
+Example configs live in `configs/`. The most relevant fusion configs are:
+
+```bash
+configs/nn-tdvi-pt-fusion-mimic-det.json      # deterministic MedFuse
+configs/nn-tdvi-pt-fusion-mimic-mfvi.json     # uninformative-prior baseline
+configs/nn-tdvi-pt-fusion-mimic-psvi.json     # MedCertAIn
+```
+
+Use the shell scripts/configs as the run interface. For final evaluation, the most important flag to set inside the evaluation script is `--model_for_final_eval`.

@@ -3,7 +3,6 @@ from torch.utils.data import Dataset
 from random import choice
 from torchvision import transforms
 from PIL import Image
-
 class FusionContextDataset(Dataset):
     def __init__(self, args, ehr_ds, cxr_ds, ehr_cxr_pairs, points="misclassified", corrupted=False, merged=False, ehr_corrupt_hypers=None, cxr_corrupt_transforms=None):
         
@@ -51,8 +50,8 @@ class FusionContextDataset(Dataset):
             # Had to do this because the vision transforms require PIL images
             cxr_data = Image.fromarray(cxr_data.astype(np.uint8)).convert("RGB")
             cxr_data = self.cxr_corrupt_transforms(cxr_data)
-        # TODO: This needs to be addressed in the original ehr data shape for mortality
-        if self.merged and self.args["task"] == "in-hospital-mortality":
+
+        if self.merged and self.args["task"] in ["in-hospital-mortality", "1-year-in-hospital-mortality", "6-month-in-hospital-mortality", "3-month-in-hospital-mortality", "los_7_days"]:
             # In mortality: If we merged the latent context set with the corrupted train 
             # context set the ehr labels come in different shapes: (n,1) and (n, ) respectively. 
             # This ensures we have no issue in the concat operation when the Dataloader 

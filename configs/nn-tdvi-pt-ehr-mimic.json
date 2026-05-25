@@ -3,7 +3,7 @@
         {
             "name": "nn-tdvi-pt-lstm-mimic-ehr",
             "id": "0",
-            "cwd": "default",
+            "cwd": "laboratory/",
             "env": {
                 "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.8",
                 "TF_CPP_MIN_LOG_LEVEL": "3",
@@ -37,7 +37,7 @@
                 "--prior_feature_logvar", "-50",
                 "--log_frequency", "5",
 
-                "--wandb_account", "default"
+                "--wandb_account", "lab"
             ]
         }
     ]

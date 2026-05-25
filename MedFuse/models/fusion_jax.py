@@ -10,15 +10,12 @@ class FusionModel(nn.Module):
     
     num_classes: int=25
     vision_num_classes: int=14
-    labels_set: str='phenotyping'
+    labels_set: str='in-hospital-mortality'
+    mc_dropout: bool=False
 
     def setup(self):   
-        # TODO clean up the arguments for each mimic_task   
         self.ehr_model = LSTM(input_dim=76, num_classes=self.num_classes, feats_dim=256, batch_first=True, dropout=0.3, layers=2, fusion=True)
         self.cxr_model = ResNet34(output='logits', pretrained='imagenet', num_classes=self.vision_num_classes, dtype='float32', fusion=True)
-
-        # Fusion model class definition ---------------
-        # self.init_fusion_method() # In the first JAX implementation we will not freeze anything
 
         target_classes = self.num_classes
         lstm_in = self.ehr_model.feats_dim
@@ -32,12 +29,14 @@ class FusionModel(nn.Module):
             lstm_in = 256 # We define it as 512 in the ResNet jax module
             projection_in = self.ehr_model.feats_dim
 
+
+        # Layer 1-----------------------------------------------
         # Projection layer implementation for Flax
         self.projection = nn.Dense(features=lstm_in)
 
         feats_dim = 2 * self.ehr_model.feats_dim 
         #---------------------------------------------------------
-
+        
         # Flax implementation
         # self.fused_cls = nn.Dense(self.num_classes)
         self.fused_cls = nn.Sequential([
@@ -65,6 +64,7 @@ class FusionModel(nn.Module):
         #IN-lstm_in OUT-lstm_out
         self.lstm_fusion_layer = lstm_layer()
 
+        self.dropout = nn.Dropout(rate=0.3)
         #--------------------------------------
 
     def __call__(self, fused_batch, train=True, feature=False):
@@ -80,8 +80,12 @@ class FusionModel(nn.Module):
         projected = self.projection(cxr_feats)
 
         feats = jnp.concatenate([ehr_feats, projected], axis=1) #(batch_size, 512)
+        
+        if self.mc_dropout:
+            feats = self.dropout(feats, deterministic=False)  # always ON
 
         fused_preds = self.fused_cls(feats) # (batch_size, 25)
+        # late_avg = (cxr_preds + ehr_preds)/2
         
         if feature:
             return (fused_preds, feats)
@@ -91,12 +95,14 @@ class FusionModel(nn.Module):
 def Fusion(
         num_classes=25,
         vision_num_classes=14,
-        labels_set='radiology'
+        labels_set='radiology',
+        mc_dropout=False
         ):
     
     
     return FusionModel(
         num_classes=num_classes,
         vision_num_classes=vision_num_classes,
-        labels_set=labels_set
+        labels_set=labels_set,
+        mc_dropout=mc_dropout
         )

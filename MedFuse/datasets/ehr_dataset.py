@@ -150,19 +150,28 @@ class EHRdataset(Dataset):
 def get_datasets(discretizer, normalizer, args, transform=False, transform_hypers=None):
     print("LOADING MIMIC-EHR DATASET")
 
-    if args["label_file_splits"] != "original": # Any of: original | seed_test | same_test | medfuse_test
+    dataset_dir = f"{args['ehr_data_dir']}/{args['task']}/"
+
+    if args['task'] in ["1-year-in-hospital-mortality", "6-month-in-hospital-mortality", "3-month-in-hospital-mortality",  "los_7_days"]:
+        print(f"LOADING EXTRACTED TRAIN VAL SPLIT FOR TASK {args['task']}")
+        train_set_listfile_path = f"data/MedFuse/train_data/{args['task']}/train_listfile.csv"
+        val_set_listfile_path = f"data/MedFuse/train_data/{args['task']}/val_listfile.csv"
+        test_set_listfile_path = f"data/MedFuse/train_data/{args['task']}/test_listfile.csv"
+        dataset_dir = f"{args['ehr_data_dir']}/in-hospital-mortality/"
+
+    elif args["label_file_splits"] != "original": # Any of: original | seed_test | same_test | medfuse_test
         type_test = args["label_file_splits"]
         print(f"LOADING MODIFIED TRAIN VAL SPLIT with SEED {args['seed']} and flag {type_test}")
-        train_set_listfile_path = f"data/MedFuse/{args['task']}/train_listfile_seed_{args['seed']}_{type_test}.csv"
-        val_set_listfile_path = f"data/MedFuse/{args['task']}/val_listfile_seed_{args['seed']}_{type_test}.csv"
+        train_set_listfile_path = f"data/MedFuse/train_data/{args['task']}/train_listfile_seed_{args['seed']}_{type_test}.csv"
+        val_set_listfile_path = f"data/MedFuse/train_data/{args['task']}/val_listfile_seed_{args['seed']}_{type_test}.csv"
 
         test_set_listfile_path = ""
         if "same_test" in type_test:
-            test_set_listfile_path = f"data/MedFuse/{args['task']}/test_listfile_{type_test}.csv"
+            test_set_listfile_path = f"data/MedFuse/train_data/{args['task']}/test_listfile_{type_test}.csv"
         elif "medfuse_test" in type_test:
             test_set_listfile_path = f"{args['ehr_data_dir']}/{args['task']}/test_listfile.csv"
         else:
-            test_set_listfile_path = f"data/MedFuse/{args['task']}/test_listfile_seed_{args['seed']}_{type_test}.csv"
+            test_set_listfile_path = f"data/MedFuse/train_data/{args['task']}/test_listfile_seed_{args['seed']}_{type_test}.csv"
     else:
         # Else, we load the original csv files from the server that contains the MIMIC dataset
         train_set_listfile_path = f"{args['ehr_data_dir']}/{args['task']}/train_listfile.csv"
@@ -173,29 +182,29 @@ def get_datasets(discretizer, normalizer, args, transform=False, transform_hyper
     print(f"Val labels file: {val_set_listfile_path}")
     print(f"Test labels file: {test_set_listfile_path}\n")
 
-    train_ds = EHRdataset(discretizer, normalizer, train_set_listfile_path, f"{args['ehr_data_dir']}/{args['task']}/", split="train", transform=transform, transform_hypers=transform_hypers)
-    val_ds = EHRdataset(discretizer, normalizer, val_set_listfile_path, f"{args['ehr_data_dir']}/{args['task']}/", split="val")
-    test_ds = EHRdataset(discretizer, normalizer, test_set_listfile_path, f"{args['ehr_data_dir']}/{args['task']}/", split="test")
+    train_ds = EHRdataset(discretizer, normalizer, train_set_listfile_path, dataset_dir=dataset_dir, split="train", transform=transform, transform_hypers=transform_hypers)
+    val_ds = EHRdataset(discretizer, normalizer, val_set_listfile_path, dataset_dir=dataset_dir, split="val")
+    test_ds = EHRdataset(discretizer, normalizer, test_set_listfile_path, dataset_dir=dataset_dir, split="test")
     
     return train_ds, val_ds, test_ds
         
 def my_collate(batch):
     x = [item[0] for item in batch]   
     targets = np.array([item[1] for item in batch])
-    task = "phenotyping"
-    if targets.shape[-1] != 25: # MORTALITY task
-        task = "in-hospital-mortality"
+    input_type = "phenotyping"
+    if targets.shape[-1] != 25: # MORTALITY-48h, mortality-1-yr or LOS tasks
+        input_type = "mortality"
         # Only in task MORTALITY targets are sent as (n, ) 
         # a 1-dimensional array and we want to send them as (n,1)
         targets = np.expand_dims(targets, axis=-1)
-    x, _ = pad_zeros(x, task, None)
+    x, _ = pad_zeros(x, input_type, None)
     return (x, targets)
 
-def pad_zeros(arr, task, min_length=None):
+def pad_zeros(arr, input_type, min_length=None):
     dtype = arr[0].dtype
     seq_length = [x.shape[0] for x in arr]
 
-    if task == "in-hospital-mortality":
+    if input_type == "mortality":
         max_len = max(seq_length)
         ret = [np.concatenate([x, np.zeros((max_len - x.shape[0],) + x.shape[1:], dtype=dtype)], axis=0) for x in arr]
     else: # CLINICAL CONDITION

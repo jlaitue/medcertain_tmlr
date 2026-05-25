@@ -3,7 +3,7 @@
         {
             "name": "nn-tdvi-pt-fusion-mimic-det",
             "id": "0",
-            "cwd": "default",
+            "cwd": "laboratory/",
             "env": {
                 "XLA_PYTHON_CLIENT_MEM_FRACTION": "0.8",
                 "TF_CPP_MIN_LOG_LEVEL": "3",
@@ -27,7 +27,6 @@
                 "--reg_points", "train",
                 
                 "--mc_samples_llk", "1",
-                "--mc_samples_eval", "1",
 
                 "--prior_mean", "0",
                 "--prior_var", "1",
@@ -37,7 +36,7 @@
                 "--log_frequency", "5",
                  
                 "--confidence_intervals", "False",
-                "--wandb_account", "default"
+                "--wandb_account", "lab"
             ]
         }
     ]

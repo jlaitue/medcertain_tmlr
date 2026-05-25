@@ -125,7 +125,7 @@ def loadmetadata(args):
     cxr_merged_icustays.intime = pd.to_datetime(cxr_merged_icustays.intime)
     cxr_merged_icustays.outtime = pd.to_datetime(cxr_merged_icustays.outtime)
     end_time = cxr_merged_icustays.outtime
-    if args["task"] == "in-hospital-mortality":
+    if args["task"] in ['in-hospital mortality', "1-year-in-hospital-mortality", "6-month-in-hospital-mortality", "3-month-in-hospital-mortality", "los_7_days"]:
         end_time = cxr_merged_icustays.intime + pd.DateOffset(hours=48)
 
     cxr_merged_icustays_during = cxr_merged_icustays.loc[(cxr_merged_icustays.StudyDateTime>=cxr_merged_icustays.intime)&((cxr_merged_icustays.StudyDateTime<=end_time))]
@@ -164,20 +164,25 @@ def load_cxr_ehr(args, ehr_train_ds, ehr_val_ds, cxr_train_ds, cxr_val_ds, ehr_t
 
     # cxr_merged_icustays['cxr_length'] = (cxr_merged_icustays['StudyDateTime'] - cxr_merged_icustays['intime'] ).astype('timedelta64[h]')
     # import pdb; pdb.set_trace()
+    if args['task'] in ["1-year-in-hospital-mortality", "6-month-in-hospital-mortality", "3-month-in-hospital-mortality", "los_7_days"]:
+        print(f"LOADING EXTRACTED TRAIN VAL SPLIT FOR TASK {args['task']}")
+        splits_labels_TRAIN_path = f"data/MedFuse/train_data/{args['task']}/train_listfile.csv"
+        splits_labels_VAL_path = f"data/MedFuse/train_data/{args['task']}/val_listfile.csv"
+        splits_labels_TEST_path = f"data/MedFuse/train_data/{args['task']}/test_listfile.csv"
 
-    if args["label_file_splits"] != "original": # Any of: original | seed_test | same_test | medfuse_test
+    elif args["label_file_splits"] != "original": # Any of: original | seed_test | same_test | medfuse_test
         type_test = args["label_file_splits"]
         print(f"LOADING MODIFIED TRAIN VAL SPLIT with SEED {args['seed']} and flag {type_test}")
-        splits_labels_TRAIN_path = f"data/MedFuse/{args['task']}/train_listfile_seed_{args['seed']}_{type_test}.csv"
-        splits_labels_VAL_path = f"data/MedFuse/{args['task']}/val_listfile_seed_{args['seed']}_{type_test}.csv"
+        splits_labels_TRAIN_path = f"data/MedFuse/train_data/{args['task']}/train_listfile_seed_{args['seed']}_{type_test}.csv"
+        splits_labels_VAL_path = f"data/MedFuse/train_data/{args['task']}/val_listfile_seed_{args['seed']}_{type_test}.csv"
 
         splits_labels_TEST_path = ""
         if "same_test" in type_test:
-            splits_labels_TEST_path = f"data/MedFuse/{args['task']}/test_listfile_{type_test}.csv"
+            splits_labels_TEST_path = f"data/MedFuse/train_data/{args['task']}/test_listfile_{type_test}.csv"
         elif "medfuse_test" in type_test:
             splits_labels_TEST_path = f"{args['ehr_data_dir']}/{args['task']}/test_listfile.csv"
         else:
-            splits_labels_TEST_path = f"data/MedFuse/{args['task']}/test_listfile_seed_{args['seed']}_{type_test}.csv"
+            splits_labels_TEST_path = f"data/MedFuse/train_data/{args['task']}/test_listfile_seed_{args['seed']}_{type_test}.csv"
         
     else:
         # Else, we load the original csv files from the server that contains the MIMIC dataset
@@ -219,7 +224,6 @@ def load_cxr_ehr(args, ehr_train_ds, ehr_val_ds, cxr_train_ds, cxr_val_ds, ehr_t
     # printPrevalence(splits_labels_val, args)
     # print("\nTEST")
     # printPrevalence(splits_labels_test, args)
-
     return train_ds, val_ds, test_ds
 
 def printPrevalence(merged_file, args):
@@ -235,9 +239,9 @@ def my_collate(batch):
     pairs = np.array([False if item[1] is None else True for item in batch])
     targets_ehr = np.array([item[2] for item in batch])
     
-    task = "phenotyping"
-    if targets_ehr.shape[-1] != 25: # MORTALITY task
-        task = "in-hospital-mortality"
+    input_type = "phenotyping"
+    if targets_ehr.shape[-1] != 25: # MORTALITY-48h, mortality-1-yr or LOS tasks
+        input_type = "mortality"
         # Only in task MORTALITY targets are sent as (n, ) 
         # a 1-dimensional array and we want to send them as (n,1)
         targets_ehr = np.expand_dims(targets_ehr, axis=-1)
@@ -247,7 +251,7 @@ def my_collate(batch):
         targets_cxr = np.stack([np.zeros(25) if item[3] is None else item[3] for item in batch])
 
     # EHR data
-    x, _ = pad_zeros(x, task, None)
+    x, _ = pad_zeros(x, input_type, None)
 
     # CXR data
     img = np.stack([np.zeros((224, 224, 3)) if item[1] is None else item[1] for item in batch])
@@ -256,12 +260,12 @@ def my_collate(batch):
     # particularly due to: next(iter(train_loader))[0] during init of models
     return [(x, targets_ehr, img, targets_cxr, pairs)]
     
-def pad_zeros(arr, task, min_length=None):
+def pad_zeros(arr, input_type, min_length=None):
 
     dtype = arr[0].dtype
     seq_length = [x.shape[0] for x in arr]
 
-    if task == "in-hospital-mortality":
+    if input_type == "mortality":
         max_len = max(seq_length)
         ret = [np.concatenate([x, np.zeros((max_len - x.shape[0],) + x.shape[1:], dtype=dtype)], axis=0) for x in arr]
     else: # CLINICAL CONDITION TASK

@@ -13,6 +13,7 @@ class Discretizer:
         
         # This would need to change depending on the selected working directory
         # and the location of the MedFuse folder relative to that path
+        print(os.getcwd())
         with open(f"../MedFuse/{config_path}") as f:
             config = json.load(f)
             self._id_to_channel = config['id_to_channel']
